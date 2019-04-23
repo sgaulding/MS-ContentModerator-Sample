@@ -1,0 +1,173 @@
+﻿@{
+    ViewData["Title"] = "Moderate Text";
+}
+
+<div>
+    <h1 class="display-4">Test Microsoft Content Moderator</h1>
+
+    <div class="row">
+        <div class="input-group">
+            <label for="reviewTextInput">Text to Review</label>
+            <textarea type="textarea" class="form-control" id="reviewTextInput" 
+                      placeholder="Text to Review" style="height: 200px"></textarea>
+        </div>
+    </div>
+    <div class="row">
+        <button id="requestButton" type="submit" class="btn btn-primary">Submit</button>
+    </div>
+
+    <div id="displayResults" style="display: none">
+        <hr/>
+        <h2>Original Text</h2>
+        <div id="reviewOriginalText" class="row"></div>
+        <hr/>
+        <ul>
+
+            <li id="reviewRecommended">Review Recommended: <span></span></li>
+            <li id="adultExplicitSituations">Adult Explicit Situations: <span></span></li>
+            <li id="matureSuggestiveSituations">Mature Suggestive Situations: <span></span></li>
+            <li id="offensiveSituations">Offensive Situations: <span></span></li>
+        </ul>
+        <hr/>
+        <h2>Highlighted Text</h2>
+        <div id="reviewOutput" class="row"></div>
+        <hr/>
+        <h2>Response</h2>
+        <div id="reviewResponse" class="row"></div>
+    </div>
+</div>
+
+
+@section Scripts{
+    <script>
+        var outputResponse = function(responseData) {
+            const responseDataObj = JSON.parse(JSON.stringify(responseData));
+
+            const originalText = responseDataObj.OriginalText;
+            const reviewRecommended = responseDataObj.Classification.ReviewRecommended === true;
+            const adultExplicitSituations = responseDataObj.Classification.Category1.Score;
+            const matureSuggestiveSituations = responseDataObj.Classification.Category2.Score;
+            const offensiveSituations = responseDataObj.Classification.Category3.Score;
+            const terms = responseDataObj.Terms;
+            const pii = responseDataObj.PII;
+
+            $('#reviewOriginalText').html(originalText);
+            $("#reviewOutput").html(originalText);
+
+            $('#reviewRecommended span').text(reviewRecommended);
+            $('#adultExplicitSituations span').text(adultExplicitSituations);
+            $('#matureSuggestiveSituations span').text(matureSuggestiveSituations);
+            $('#offensiveSituations span').text(offensiveSituations);
+
+            if (reviewRecommended) {
+                $('#reviewRecommended span').addClass('bg-danger');
+            }
+
+            var highlightedText = $("#reviewOutput").html();;
+            var addPosition = 0;
+
+            if (terms) {
+                terms.forEach(function(term, index) {
+                    const position = term.OriginalIndex + addPosition;
+                    const word = term.Term;
+
+                    const startHighlight = "<span class='bg-warning'><strong>";
+                    const endHighlight = "</strong></span>";
+                    addPosition += (startHighlight.length + endHighlight.length);
+
+                    highlightedText = highlightedText.slice(0, position) +
+                        startHighlight +
+                        highlightedText.slice(position);
+
+                    const endPosition = position + startHighlight.length + word.length;
+                    highlightedText = highlightedText.slice(0, endPosition) +
+                        endHighlight +
+                        highlightedText.slice(endPosition);
+                });
+                $("#reviewOutput").html(highlightedText);
+            }
+
+            highlightedText = $("#reviewOutput").html();
+            addPosition = 0;
+            if (pii) {
+                for (let propertyName in pii) {
+                    if (pii.hasOwnProperty(propertyName) &&
+                        Array.isArray(pii[propertyName]) &&
+                        pii[propertyName].length > 0) {
+
+                        pii[propertyName].forEach(function(element, index) {
+                            const position = element.Index + addPosition;
+                            const detectedWord = element.Detected;
+                            const text = element.Text;
+                            const subType = element.SubType;
+
+
+                            const startHighlight = "<span class='bg-info'><strong>";
+                            const endHighlight = " </strong></span>";
+                            addPosition += (startHighlight.length + endHighlight.length);
+
+
+                            let endPosition;
+                            switch (subType) {
+                            case "Regular":
+                                var indexOfPosition = highlightedText.indexOf(text, position);
+
+                                highlightedText = highlightedText.slice(0, indexOfPosition) +
+                                    startHighlight +
+                                    highlightedText.slice(indexOfPosition);
+
+                                endPosition = indexOfPosition + startHighlight.length + text.length;
+                                highlightedText = highlightedText.slice(0, endPosition) +
+                                    endHighlight +
+                                    highlightedText.slice(endPosition);
+
+                            case "Suspected":
+                                highlightedText = highlightedText.slice(0, position) +
+                                    startHighlight +
+                                    highlightedText.slice(position);
+
+                                endPosition = position + startHighlight.length + text.length;
+                                highlightedText = highlightedText.slice(0, endPosition) +
+                                    endHighlight +
+                                    highlightedText.slice(endPosition);
+
+
+                            default:
+                            }
+
+                        });
+                    }
+                };
+                $("#reviewOutput").html(highlightedText);
+            }
+
+
+        }
+
+        $(document).ready(function() {
+
+            $("#requestButton").click(function(event) {
+                event.preventDefault();
+
+                $('#reviewOriginalText').html('');
+                $("#reviewOutput").html('');
+                $('#reviewResponse').html('');
+                $('#displayResults').hide();
+
+                $.post({
+                        url: '@Url.Action("ScreenText")',
+                        data: { text: $('#reviewTextInput').val() }
+                    })
+                    .done(function(data) {
+                        $('#reviewResponse')
+                            .html('<pre><code>' + JSON.stringify(data, null, '\t') + '</code></pre>');
+                        outputResponse(data);
+                        $('#displayResults').show();
+                    })
+                    .fail(function(data) {
+                        $('#reviewResponse').html(data);
+                    });
+            });
+        });
+    </script>
+}

@@ -1,0 +1,24 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div>
+    <h1 class="display-4">Test Microsoft Content Moderator</h1>
+</div>
+
+
+<div class="card" style="width: 18rem;">
+    <div class="card-body">
+        <h5 class="card-title">Moderate Text</h5>
+        <p class="card-text">Supply text and get analysis for certain categories</p>
+        <a href="@Url.Action("Index", "ModerateText")" class="btn btn-primary">Text</a>
+    </div>
+</div>
+<div class="card" style="width: 18rem;">
+    <div class="card-body">
+        <h5 class="card-title">Moderate Image</h5>
+        <p class="card-text">Supply images and get analysis for certain categories</p>
+        <a href="@Url.Action("Index", "ModerateImage")" class="btn btn-primary">Image</a>
+    </div>
+</div>
+

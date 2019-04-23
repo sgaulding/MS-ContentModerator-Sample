@@ -1,0 +1,48 @@
+﻿@model IList<CI.ContentModerator.Web.Controllers.ImageEvaluationInfo>
+@{
+    ViewData["Title"] = "Moderate Image";
+}
+
+<div>
+    <h1 class="display-4">Test Microsoft Content Moderator</h1>
+
+    
+    @if (Model == null || Model.Count == 0)
+    {
+        <form id="" method="post" enctype="multipart/form-data" asp-controller="ModerateImage" asp-action="EvaluateFileInput">
+            <div class="form-group">
+                <div class="col-md-10">
+                    <p>Upload one or more files using this form:</p>
+                    <input type="file" name="files" multiple>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-10">
+                    <input type="submit" value="Upload">
+                </div>
+            </div>
+        </form>
+    }
+    else
+    {
+        <ul class="list-group">
+        @foreach (var imageEvaluationInfo in Model)
+        {
+            <li class="list-group-item">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">@imageEvaluationInfo.ImageName</h5>
+                </div>
+                <hr />
+                <h6 class="mb-1">Evaluation</h6>
+                <p class="mb-1">@Html.Raw(Json.Serialize(imageEvaluationInfo.Evaluate))</p>
+                <hr />
+                <h6 class="mb-1">OCR</h6>
+                <p class="mb-1">@Html.Raw(Json.Serialize(imageEvaluationInfo.Ocr))</p>
+                <hr />
+                <h6 class="mb-1">Faces Found</h6>
+                <p class="mb-1">@Html.Raw(Json.Serialize(imageEvaluationInfo.FoundFaces))</p>
+            </li>
+        }
+        </ul>
+    }
+</div>
